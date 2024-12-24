@@ -1,5 +1,6 @@
 import pygame as py
 from modules.maze import Maze
+from tkinter import messagebox
 
 WIDTH = 1280
 HEIGHT = 720
@@ -285,6 +286,17 @@ def play(): # Play Screen
 def load_maze(): # Load Maze
     ''''''
 
+def handle_AI_controls(AI_controls, mouse_pos):
+    solve_maze, _ , _, _ = AI_controls
+
+    if solve_maze.collidepoint(mouse_pos):
+        path = maze.a_star()
+        if path:
+            for cell in path:
+                maze.board[cell[0]][cell[1]] = 5
+        else:
+            messagebox.showerror('Error', 'No Path Available')
+
 while running:
     
     screen.fill("white")
@@ -306,7 +318,9 @@ while running:
             if mouse_y <= 120:
 
                 if AI_controls[0].collidepoint(mouse_x, mouse_y): # Solve Maze
-                    pass
+                    maze.clean_board()
+                    handle_AI_controls(AI_controls, py.mouse.get_pos())
+                    maze.set_goal(maze.goal) # temporary fix to show goal cell after solving shortest path.
                 if AI_controls[1].collidepoint(mouse_x, mouse_y): # Show Steps
                     pass
                 if AI_controls[2].collidepoint(mouse_x, mouse_y): # Previous Step

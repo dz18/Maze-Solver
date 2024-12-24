@@ -1,3 +1,5 @@
+from queue import PriorityQueue
+from collections import defaultdict
 
 class Maze:
     '''
@@ -120,7 +122,7 @@ class Maze:
                             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
                             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1]]
                 self.start = (0, 1)
-                self.end = (14, 30)
+                self.goal = (14, 30)
             if map == 2:
                 # Lines
                 self.board = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -139,7 +141,7 @@ class Maze:
                             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
                             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
                 self.start = (6, 3)
-                self.end = (6, 27)
+                self.goal = (6, 27)
             if map == 3:
                 # Panda
                 self.board = [[0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -179,6 +181,7 @@ class Maze:
         self.goal = None
 
     def show_board(self):
+
         ''' Print the board into the terminal '''
 
         start, goal = (0,0)
@@ -190,3 +193,60 @@ class Maze:
                 if self.board[row][col] == 3 : goal = (row, col)
         print(f'start: {start}')
         print(f'goal: {goal}')
+
+    def clean_board(self):
+        ''' Clean the board of all path cells '''
+
+        for row in range(len(self.board)):
+            for col in range(len(self.board)):
+                if self.board[row][col] == 5:
+                    self.board[row][col] = 0
+
+
+    def a_star(self):
+        open_set = PriorityQueue()
+        open_set.put((0, self.start))
+        came_from = {}
+        g_score = defaultdict(lambda: float('inf')) # The cost to reach a node from the starting point
+        g_score[self.start] = 0
+        f_score = defaultdict(lambda: float('inf')) # An estimation of the total cost to reach the goal through a particular node
+        f_score[self.start] = self.heuristic(self.start, self.goal)
+
+        while not open_set.empty():
+            _ , current = open_set.get()
+
+            if current == self.goal:
+                return self.reconstruct_path(came_from, current)
+            
+            neighbors = self.get_neighbors(current)
+            for neighbor in neighbors:
+                tentative_g_score = g_score[current] + 1
+
+                if tentative_g_score < g_score[neighbor]:
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative_g_score
+                    f_score[neighbor] = tentative_g_score + self.heuristic(neighbor, self.goal)
+                    open_set.put((f_score[neighbor], neighbor))
+
+        return None
+
+    def heuristic(self, a, b):
+        return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+    def get_neighbors(self, cell):
+        directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # Right, Down, Left, Up
+        neighbors = []
+        x, y = cell
+        for dx, dy in directions:
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < len(self.board) and 0 <= ny < len(self.board[0]) and self.board[nx][ny] != 1:  # Check for walls
+                neighbors.append((nx, ny))
+        return neighbors
+
+    def reconstruct_path(self, came_from, current):
+        path = []
+        while current in came_from:
+            path.append(current)
+            current = came_from[current]
+        path.reverse()
+        return path
