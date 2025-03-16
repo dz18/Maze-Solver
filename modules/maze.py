@@ -204,49 +204,50 @@ class Maze:
 
 
     def a_star(self):
+
+        def heuristic(a, b):
+            return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+        def get_neighbors(cell):
+            directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # Right, Down, Left, Up
+            neighbors = []
+            x, y = cell
+            for dx, dy in directions:
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < len(self.board) and 0 <= ny < len(self.board[0]) and self.board[nx][ny] != 1:  # Check for walls
+                    neighbors.append((nx, ny))
+            return neighbors
+
+        def reconstruct_path(came_from, current):
+            path = []
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+            path.reverse()
+            return path
+
         open_set = PriorityQueue()
         open_set.put((0, self.start))
         came_from = {}
         g_score = defaultdict(lambda: float('inf')) # The cost to reach a node from the starting point
         g_score[self.start] = 0
         f_score = defaultdict(lambda: float('inf')) # An estimation of the total cost to reach the goal through a particular node
-        f_score[self.start] = self.heuristic(self.start, self.goal)
+        f_score[self.start] = heuristic(self.start, self.goal)
 
         while not open_set.empty():
             _ , current = open_set.get()
 
             if current == self.goal:
-                return self.reconstruct_path(came_from, current)
+                return reconstruct_path(came_from, current)
             
-            neighbors = self.get_neighbors(current)
+            neighbors = get_neighbors(current)
             for neighbor in neighbors:
                 tentative_g_score = g_score[current] + 1
 
                 if tentative_g_score < g_score[neighbor]:
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g_score
-                    f_score[neighbor] = tentative_g_score + self.heuristic(neighbor, self.goal)
+                    f_score[neighbor] = tentative_g_score + heuristic(neighbor, self.goal)
                     open_set.put((f_score[neighbor], neighbor))
 
         return None
-
-    def heuristic(self, a, b):
-        return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
-    def get_neighbors(self, cell):
-        directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # Right, Down, Left, Up
-        neighbors = []
-        x, y = cell
-        for dx, dy in directions:
-            nx, ny = x + dx, y + dy
-            if 0 <= nx < len(self.board) and 0 <= ny < len(self.board[0]) and self.board[nx][ny] != 1:  # Check for walls
-                neighbors.append((nx, ny))
-        return neighbors
-
-    def reconstruct_path(self, came_from, current):
-        path = []
-        while current in came_from:
-            path.append(current)
-            current = came_from[current]
-        path.reverse()
-        return path
